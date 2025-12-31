@@ -11,6 +11,7 @@
 
   <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Habits">
   <link rel="apple-touch-icon" href="/habits/icons/icon-192.png">
@@ -24,10 +25,10 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       padding: 16px 16px 90px;
     }
-    .wrap { max-width: 980px; margin: 0 auto; }
-    h1 { font-size: 20px; margin: 0; }
-    .sub { font-size: 12px; color: #bdbdc7; }
+    .wrap { max-width: 720px; margin: 0 auto; }
 
+    h1 { font-size: 20px; margin: 0; }
+    .sub { font-size: 12px; color: #bdbdc7; line-height: 1.35; }
     .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
     button, input {
@@ -46,65 +47,92 @@
       border-radius: 18px;
       padding: 14px;
       margin-bottom: 14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
     }
 
-    .gridWrap {
-      overflow: auto;
-      border-radius: 16px;
-      border: 1px solid #26262c;
-    }
-    .grid {
+    .habitList { display: grid; gap: 10px; }
+
+    .habitRow {
       display: grid;
-      grid-auto-rows: 34px;
-      background: #121215;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      background: #17171a;
+      border: 1px solid #26262c;
+      border-radius: 16px;
+      padding: 12px;
     }
 
-    .cell {
+    .habitName {
       display: flex;
       align-items: center;
-      justify-content: center;
-      border-right: 1px solid #1f1f26;
-      border-bottom: 1px solid #1f1f26;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
     }
 
-    .cell.sticky {
-      position: sticky;
-      left: 0;
-      z-index: 3;
-      background: #15151a;
-      justify-content: flex-start;
-      padding-left: 10px;
-      min-width: 180px;
+    .nameText {
+      font-weight: 700;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .cell.day {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: #141419;
+    .pill {
       font-size: 12px;
+      border: 1px solid #2c2c35;
+      padding: 2px 8px;
+      border-radius: 999px;
       color: #bdbdc7;
+      flex: 0 0 auto;
     }
 
-    .cell.corner {
-      position: sticky;
-      top: 0;
-      left: 0;
-      z-index: 4;
-      background: #15151a;
+    .weekGrid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      justify-items: center;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .weekGrid .spacer {
+      visibility: hidden;
     }
 
     .box {
-      width: 18px;
-      height: 18px;
-      border-radius: 5px;
+      width: 100%;
+      max-width: 54px;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
       border: 1px solid #2c2c35;
       background: #0f0f10;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
     }
 
-    .box.done { background: var(--c); }
+    /* Letter inside box (visible only when empty) */
+    .box .label {
+      font-size: 14px;
+      font-weight: 800;
+      color: #bdbdc7;
+      letter-spacing: 0.5px;
+    }
 
+    /* Done hides letter by covering it */
+    .box.done {
+      background: var(--c);
+      border-color: color-mix(in srgb, var(--c) 70%, #2c2c35);
+    }
+    .box.done .label { opacity: 0; }
+
+    /* Rest hides letter too, with hatched pattern */
     .box.rest {
       background: repeating-linear-gradient(
         45deg,
@@ -113,13 +141,13 @@
         rgba(255,255,255,.03) 4px,
         rgba(255,255,255,.03) 8px
       );
+      border-color: #3a3a45;
     }
+    .box.rest .label { opacity: 0; }
 
-    .pill {
+    .hint {
+      margin-top: 10px;
       font-size: 12px;
-      border: 1px solid #2c2c35;
-      padding: 2px 8px;
-      border-radius: 999px;
       color: #bdbdc7;
     }
   </style>
@@ -140,15 +168,13 @@
       <input id="newHabitName" placeholder="Add habit">
       <button id="addHabitBtn">Add</button>
     </div>
-    <div class="sub" style="margin-top:8px">
-      Tap a square: None → Done → Rest → None. Max 2 rest days per week.
-      <br>Streaks count DONE days; REST pauses, NONE breaks.
+    <div class="hint">
+      Tap a day: None → Done → Rest → None. Max 2 rest days per week.<br>
+      Streaks count DONE days; REST pauses; NONE breaks.
     </div>
   </div>
 
-  <div class="gridWrap">
-    <div class="grid" id="grid"></div>
-  </div>
+  <div class="habitList" id="habitList"></div>
 
 </div>
 
@@ -167,7 +193,6 @@
     return x;
   };
 
-  // Safe ID generator (works even if crypto.randomUUID isn't available)
   function makeId() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return "id-" + Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
@@ -201,9 +226,8 @@
     let cur = new Date(now);
     while (true) {
       const v = data.entries[hid][toISO(cur)] || "none";
-      if (v === "none") break;   // missed day breaks
-      if (v === "done") s++;     // done counts
-      // rest pauses (no increment, no break)
+      if (v === "none") break;
+      if (v === "done") s++;
       cur = addDays(cur, -1);
     }
     return s;
@@ -218,10 +242,9 @@
     return c;
   }
 
-  function toggle(hid, iso) {
+  function cycle(hid, iso) {
     const cur = data.entries[hid][iso] || "none";
     const next = (cur === "none") ? "done" : (cur === "done") ? "rest" : "none";
-
     if (next === "rest" && restCount(hid, iso) >= 2) return;
 
     if (next === "none") delete data.entries[hid][iso];
@@ -231,41 +254,62 @@
     render();
   }
 
-  // Make toggle available for the inline onclick attribute
-  window.toggle = toggle;
-
   function render() {
     document.getElementById("todayLine").textContent =
-      `Today: ${fmtUK(now)} • Tomorrow: ${fmtUK(addDays(now, 1))}`;
+      `Today: ${fmtUK(now)} • Week starts: ${fmtUK(startOfWeek(now))}`;
 
-    const grid = document.getElementById("grid");
-    const start = startOfWeek(now);
-    const days = Array.from({length: 7}, (_, i) => addDays(start, i));
+    const list = document.getElementById("habitList");
+    list.innerHTML = "";
 
-    grid.style.gridTemplateColumns = `180px repeat(7, 34px)`;
-    grid.innerHTML =
-      `<div class="cell corner">Habit</div>` +
-      days.map(d => `<div class="cell day">${d.toLocaleDateString(UK, { weekday: "narrow" })}</div>`).join("");
+    const weekStart = startOfWeek(now);
+    const weekDates = Array.from({length: 7}, (_, i) => addDays(weekStart, i));
+
+    // Labels inside boxes: M T W T F S S
+    const labels = ["M","T","W","T","F","S","S"];
 
     data.habits.forEach(h => {
-      grid.innerHTML += `
-        <div class="cell sticky">
-          <div class="row" style="justify-content:space-between;width:100%">
-            <span>${h.name}</span>
-            <span class="pill">${streak(h.id)}</span>
-          </div>
-        </div>
+      const row = document.createElement("div");
+      row.className = "habitRow";
+
+      const left = document.createElement("div");
+      left.className = "habitName";
+      left.innerHTML = `
+        <span class="nameText">${h.name}</span>
+        <span class="pill">${streak(h.id)}</span>
       `;
 
-      days.forEach(d => {
+      const grid = document.createElement("div");
+      grid.className = "weekGrid";
+
+      // 2-row layout using a 4-col grid.
+      // Top row: 0..3 (Mon..Thu)
+      // Bottom row: 4..6 (Fri..Sun) + 1 spacer
+      for (let i = 0; i < 7; i++) {
+        const d = weekDates[i];
         const iso = toISO(d);
         const v = data.entries[h.id][iso] || "none";
-        grid.innerHTML += `
-          <div class="cell">
-            <div class="box ${v}" style="--c:${h.color}" onclick="toggle('${h.id}','${iso}')"></div>
-          </div>
-        `;
-      });
+
+        const box = document.createElement("div");
+        box.className = `box ${v}`;
+        box.style.setProperty("--c", h.color);
+        box.title = `${h.name} • ${fmtUK(d)} • ${v.toUpperCase()}`;
+        box.innerHTML = `<span class="label">${labels[i]}</span>`;
+        box.addEventListener("click", () => cycle(h.id, iso));
+
+        // Insert spacer before Fri so Fri starts row 2 col 1
+        if (i === 4) {
+          const spacer = document.createElement("div");
+          spacer.className = "spacer";
+          spacer.textContent = "";
+          grid.appendChild(spacer);
+        }
+
+        grid.appendChild(box);
+      }
+
+      row.appendChild(left);
+      row.appendChild(grid);
+      list.appendChild(row);
     });
   }
 
@@ -292,7 +336,7 @@
 
   // Service worker (GitHub Pages path)
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/habits/sw.js");
+    navigator.serviceWorker.register("/habits/sw.js?v=3");
   }
 </script>
 </body>
