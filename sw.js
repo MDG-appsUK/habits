@@ -1,6 +1,5 @@
 const BASE = "/habits";
 const CACHE = "habits-pwa-v1";
-
 const ASSETS = [
   `${BASE}/`,
   `${BASE}/index.html`,
@@ -11,9 +10,7 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
-  );
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
 });
 
 self.addEventListener("activate", (event) => {
@@ -21,7 +18,5 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
-  );
+  event.respondWith(caches.match(event.request).then((r) => r || fetch(event.request)));
 });
