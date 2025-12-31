@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Habits</title>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#121212">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Habits">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+<style>
+:root { color-scheme: dark; }
+body{
+  margin:0;
+  background:#0f0f10;
+  color:#eaeaea;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  padding:16px 16px 90px;
+}
+.wrap{max-width:980px;margin:0 auto;}
+h1{font-size:20px;margin:0;}
+.sub{font-size:12px;color:#bdbdc7;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button,select,input{
+  background:#101013;color:#eaeaea;
+  border:1px solid #2c2c35;
+  border-radius:12px;
+  padding:10px 12px;
+  font-weight:600;
+}
+button{background:#1f1f26;cursor:pointer}
+.card{
+  background:#17171a;border:1px solid #26262c;border-radius:18px;
+  padding:14px;margin-bottom:14px;
+}
+.gridWrap{overflow:auto;border-radius:16px;border:1px solid #26262c}
+.grid{
+  display:grid;
+  grid-auto-rows:34px;
+  background:#121215;
+}
+.cell{
+  display:flex;align-items:center;justify-content:center;
+  border-right:1px solid #1f1f26;
+  border-bottom:1px solid #1f1f26;
+}
+.cell.sticky{
+  position:sticky;left:0;z-index:3;
+  background:#15151a;justify-content:flex-start;
+  padding-left:10px;min-width:160px;
+}
+.cell.day{
+  position:sticky;top:0;z-index:2;
+  background:#141419;font-size:12px;color:#bdbdc7;
+}
+.cell.corner{
+  position:sticky;top:0;left:0;z-index:4;
+  background:#15151a;
+}
+.box{
+  width:18px;height:18px;border-radius:5px;
+  border:1px solid #2c2c35;background:#0f0f10;
+  cursor:pointer;
+}
+.box.done{background:var(--c);}
+.box.rest{
+  background:repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,.18) 0px,
+    rgba(255,255,255,.18) 4px,
+    rgba(255,255,255,.03) 4px,
+    rgba(255,255,255,.03) 8px
+  );
+}
+.toast{
+  position:fixed;left:50%;bottom:18px;
+  transform:translateX(-50%);
+  background:#1a1a20;border:1px solid #2c2c35;
+  border-radius:14px;padding:10px 12px;
+  display:none;z-index:50;
+}
+.toast.show{display:block}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="row" style="justify-content:space-between;margin-bottom:10px">
+    <div>
+      <h1>Habits</h1>
+      <div class="sub" id="todayLine"></div>
+    </div>
+    <div class="row">
+      <button id="prevBtn">←</button>
+      <button id="nextBtn">→</button>
+      <select id="viewSelect">
+        <option value="week">Week</option>
+        <option value="month">Month</option>
+        <option value="year">Year</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <input id="newHabitName" placeholder="Add habit">
+      <button id="addHabitBtn">Add</button>
+    </div>
+    <div class="sub" style="margin-top:8px">
+      Tap a square: None → Done → Rest → None. Max 2 rest days/week.
+    </div>
+  </div>
+
+  <div class="gridWrap">
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const UK="en-GB";
+const pad=n=>String(n).padStart(2,"0");
+const toISO=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fromISO=s=>{const[x,y,z]=s.split("-").map(Number);return new Date(x,y-1,z)};
+const fmtUK=d=>d.toLocaleDateString(UK);
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const startOfWeek=d=>{const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));x.setHours(0,0,0,0);return x};
+
+const STORAGE="habit_tracker_v1";
+const now=new Date();now.setHours(0,0,0,0);
+
+function load(){
+  const raw=localStorage.getItem(STORAGE);
+  if(raw) return JSON.parse(raw);
+  const habits=[
+    {id:crypto.randomUUID(),name:"Write",color:"#7c5cff"},
+    {id:crypto.randomUUID(),name:"Walk",color:"#37d67a"},
+    {id:crypto.randomUUID(),name:"Workout",color:"#ff7a59"},
+    {id:crypto.randomUUID(),name:"Piano",color:"#4aa3ff"}
+  ];
+  const entries={};habits.forEach(h=>entries[h.id]={});
+  const d={habits,entries,lastToast:{}};
+  localStorage.setItem(STORAGE,JSON.stringify(d));
+  return d;
+}
+
+const data=load();
+
+function streak(hid){
+  let s=0,cur=new Date(now);
+  while(true){
+    const v=data.entries[hid][toISO(cur)]||"none";
+    if(v==="none") break;
+    if(v==="done") s++;
+    cur=addDays(cur,-1);
+  }
+  return s;
+}
+
+function render(){
+  document.getElementById("todayLine").textContent=
+    `Today: ${fmtUK(now)} • Tomorrow: ${fmtUK(addDays(now,1))}`;
+
+  const grid=document.getElementById("grid");
+  const start=startOfWeek(now);
+  const days=[...Array(7)].map((_,i)=>addDays(start,i));
+
+  grid.style.gridTemplateColumns=`160px repeat(7,34px)`;
+  grid.innerHTML=`<div class="cell corner">Habit</div>`+
+    days.map(d=>`<div class="cell day">${d.toLocaleDateString(UK,{weekday:"narrow"})}</div>`).join("");
+
+  data.habits.forEach(h=>{
+    const s=streak(h.id);
+    grid.innerHTML+=`
+      <div class="cell sticky">
+        <span style="display:flex;justify-content:space-between;width:100%">
+          <span>${h.name}</span>
+          <span style="font-size:12px;border:1px solid #2c2c35;
+            padding:2px 8px;border-radius:999px">${s}</span>
+        </span>
+      </div>
+    `;
+    days.forEach(d=>{
+      const iso=toISO(d);
+      const v=data.entries[h.id][iso]||"none";
+      grid.innerHTML+=`
+        <div class="cell">
+          <div class="box ${v}" style="--c:${h.color}"
+            onclick="toggle('${h.id}','${iso}')"></div>
+        </div>`;
+    });
+  });
+}
+
+function restCount(hid,iso){
+  const s=startOfWeek(fromISO(iso));
+  let c=0;
+  for(let i=0;i<7;i++){
+    if(data.entries[hid][toISO(addDays(s,i))]==="rest") c++;
+  }
+  return c;
+}
+
+function toggle(hid,iso){
+  const cur=data.entries[hid][iso]||"none";
+  const next=cur==="none"?"done":cur==="done"?"rest":"none";
+  if(next==="rest" && restCount(hid,iso)>=2) return;
+  if(next==="none") delete data.entries[hid][iso];
+  else data.entries[hid][iso]=next;
+  localStorage.setItem(STORAGE,JSON.stringify(data));
+  render();
+}
+
+document.getElementById("addHabitBtn").onclick=()=>{
+  const i=document.getElementById("newHabitName");
+  if(!i.value.trim())return;
+  data.habits.push({
+    id:crypto.randomUUID(),
+    name:i.value.trim(),
+    color:`hsl(${Math.random()*360} 80% 60%)`
+  });
+  data.entries[data.habits.at(-1).id]={};
+  i.value="";
+  localStorage.setItem(STORAGE,JSON.stringify(data));
+  render();
+};
+
+render();
+
+if("serviceWorker"in navigator){
+  navigator.serviceWorker.register("/sw.js");
+}
+</script>
+</body>
+</html>
