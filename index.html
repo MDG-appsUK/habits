@@ -30,7 +30,7 @@
 
     .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-    button, input, select {
+    button, input {
       background: #101013;
       color: #eaeaea;
       border: 1px solid #2c2c35;
@@ -74,7 +74,7 @@
       background: #15151a;
       justify-content: flex-start;
       padding-left: 10px;
-      min-width: 170px;
+      min-width: 180px;
     }
 
     .cell.day {
@@ -103,9 +103,7 @@
       cursor: pointer;
     }
 
-    .box.done {
-      background: var(--c);
-    }
+    .box.done { background: var(--c); }
 
     .box.rest {
       background: repeating-linear-gradient(
@@ -155,19 +153,25 @@
 </div>
 
 <script>
-  const BASE = "/habits";
   const UK = "en-GB";
-  const pad = n => String(n).padStart(2,"0");
+  const pad = n => String(n).padStart(2, "0");
   const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const fromISO = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+  const fromISO = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
   const fmtUK = d => d.toLocaleDateString(UK);
-  const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+  const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+
   const startOfWeek = d => {
-    const x=new Date(d);
-    x.setDate(x.getDate()-((x.getDay()+6)%7));
+    const x = new Date(d);
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); // Monday start
     x.setHours(0,0,0,0);
     return x;
   };
+
+  // Safe ID generator (works even if crypto.randomUUID isn't available)
+  function makeId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "id-" + Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+  }
 
   const STORAGE = "habits_data_v1";
   const now = new Date(); now.setHours(0,0,0,0);
@@ -175,12 +179,14 @@
   function load() {
     const raw = localStorage.getItem(STORAGE);
     if (raw) return JSON.parse(raw);
+
     const habits = [
-      { id: crypto.randomUUID(), name:"Write",   color:"#7c5cff" },
-      { id: crypto.randomUUID(), name:"Walk",    color:"#37d67a" },
-      { id: crypto.randomUUID(), name:"Workout", color:"#ff7a59" },
-      { id: crypto.randomUUID(), name:"Piano",   color:"#4aa3ff" }
+      { id: makeId(), name: "Write",   color: "#7c5cff" },
+      { id: makeId(), name: "Walk",    color: "#37d67a" },
+      { id: makeId(), name: "Workout", color: "#ff7a59" },
+      { id: makeId(), name: "Piano",   color: "#4aa3ff" }
     ];
+
     const entries = {};
     habits.forEach(h => entries[h.id] = {});
     const data = { habits, entries };
@@ -195,8 +201,9 @@
     let cur = new Date(now);
     while (true) {
       const v = data.entries[hid][toISO(cur)] || "none";
-      if (v === "none") break;
-      if (v === "done") s++;
+      if (v === "none") break;   // missed day breaks
+      if (v === "done") s++;     // done counts
+      // rest pauses (no increment, no break)
       cur = addDays(cur, -1);
     }
     return s;
@@ -205,31 +212,88 @@
   function restCount(hid, iso) {
     const s = startOfWeek(fromISO(iso));
     let c = 0;
-    for (let i=0;i<7;i++) {
-      if (data.entries[hid][toISO(addDays(s,i))] === "rest") c++;
+    for (let i=0; i<7; i++) {
+      if (data.entries[hid][toISO(addDays(s, i))] === "rest") c++;
     }
     return c;
   }
 
   function toggle(hid, iso) {
     const cur = data.entries[hid][iso] || "none";
-    const next = cur==="none" ? "done" : cur==="done" ? "rest" : "none";
-    if (next==="rest" && restCount(hid,iso)>=2) return;
-    if (next==="none") delete data.entries[hid][iso];
+    const next = (cur === "none") ? "done" : (cur === "done") ? "rest" : "none";
+
+    if (next === "rest" && restCount(hid, iso) >= 2) return;
+
+    if (next === "none") delete data.entries[hid][iso];
     else data.entries[hid][iso] = next;
+
     localStorage.setItem(STORAGE, JSON.stringify(data));
     render();
   }
 
+  // Make toggle available for the inline onclick attribute
+  window.toggle = toggle;
+
   function render() {
     document.getElementById("todayLine").textContent =
-      `Today: ${fmtUK(now)} • Tomorrow: ${fmtUK(addDays(now,1))}`;
+      `Today: ${fmtUK(now)} • Tomorrow: ${fmtUK(addDays(now, 1))}`;
 
     const grid = document.getElementById("grid");
     const start = startOfWeek(now);
-    const days = [...Array(7)].map((_,i)=>addDays(start,i));
+    const days = Array.from({length: 7}, (_, i) => addDays(start, i));
 
-    grid.style.gridTemplateColumns = `170px repeat(7,34px)`;
+    grid.style.gridTemplateColumns = `180px repeat(7, 34px)`;
     grid.innerHTML =
       `<div class="cell corner">Habit</div>` +
-      days.map(d=>`<div
+      days.map(d => `<div class="cell day">${d.toLocaleDateString(UK, { weekday: "narrow" })}</div>`).join("");
+
+    data.habits.forEach(h => {
+      grid.innerHTML += `
+        <div class="cell sticky">
+          <div class="row" style="justify-content:space-between;width:100%">
+            <span>${h.name}</span>
+            <span class="pill">${streak(h.id)}</span>
+          </div>
+        </div>
+      `;
+
+      days.forEach(d => {
+        const iso = toISO(d);
+        const v = data.entries[h.id][iso] || "none";
+        grid.innerHTML += `
+          <div class="cell">
+            <div class="box ${v}" style="--c:${h.color}" onclick="toggle('${h.id}','${iso}')"></div>
+          </div>
+        `;
+      });
+    });
+  }
+
+  document.getElementById("addHabitBtn").onclick = () => {
+    const i = document.getElementById("newHabitName");
+    const name = (i.value || "").trim();
+    if (!name) return;
+
+    const newHabit = {
+      id: makeId(),
+      name,
+      color: `hsl(${Math.random()*360} 80% 60%)`
+    };
+
+    data.habits.push(newHabit);
+    data.entries[newHabit.id] = {};
+    i.value = "";
+
+    localStorage.setItem(STORAGE, JSON.stringify(data));
+    render();
+  };
+
+  render();
+
+  // Service worker (GitHub Pages path)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/habits/sw.js");
+  }
+</script>
+</body>
+</html>
