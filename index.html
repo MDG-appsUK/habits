@@ -18,200 +18,319 @@
 
   <style>
     :root { color-scheme: dark; }
-    body {
-      margin: 0;
-      background: #0f0f10;
-      color: #eaeaea;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      padding: 16px 16px 90px;
+    body{
+      margin:0; background:#0f0f10; color:#eaeaea;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      padding:16px 16px 90px;
     }
-    .wrap { max-width: 720px; margin: 0 auto; }
+    .wrap{ max-width: 780px; margin: 0 auto; }
+    h1{ font-size:20px; margin:0; }
+    .sub{ font-size:12px; color:#bdbdc7; line-height:1.35; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 
-    h1 { font-size: 20px; margin: 0; }
-    .sub { font-size: 12px; color: #bdbdc7; line-height: 1.35; }
-    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-
-    button, input {
-      background: #101013;
-      color: #eaeaea;
-      border: 1px solid #2c2c35;
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-weight: 600;
+    button, input, select{
+      background:#101013; color:#eaeaea;
+      border:1px solid #2c2c35;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:600;
     }
-    button { background: #1f1f26; cursor: pointer; }
+    button{ background:#1f1f26; cursor:pointer; }
+    button:active{ transform: translateY(1px); }
 
-    .card {
-      background: #17171a;
-      border: 1px solid #26262c;
-      border-radius: 18px;
-      padding: 14px;
-      margin-bottom: 14px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    .card{
+      background:#17171a;
+      border:1px solid #26262c;
+      border-radius:18px;
+      padding:14px;
+      margin-bottom:14px;
+      box-shadow:0 8px 30px rgba(0,0,0,.35);
     }
 
-    .habitList { display: grid; gap: 10px; }
+    /* Top controls */
+    .topBar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .viewToggle{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .viewToggle button{
+      padding:8px 10px;
+      border-radius:999px;
+      background:#141419;
+    }
+    .viewToggle button.active{
+      background:#1f1f26;
+      border-color:#3a3a45;
+    }
+    .navBar{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    }
+    .titleLine{
+      font-size:14px;
+      color:#bdbdc7;
+      font-weight:700;
+      padding:6px 0;
+    }
 
-    .habitRow {
-      display: grid;
+    /* Week view: habit cards */
+    .habitList{ display:grid; gap:10px; }
+
+    .habitRow{
+      display:grid;
       grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-      background: #17171a;
-      border: 1px solid #26262c;
-      border-radius: 16px;
-      padding: 12px;
+      gap:10px;
+      align-items:center;
+      background:#17171a;
+      border:1px solid #26262c;
+      border-radius:16px;
+      padding:12px;
+    }
+    .habitName{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-width:0;
+    }
+    .nameText{
+      font-weight:700;
+      font-size:14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .pill{
+      font-size:12px;
+      border:1px solid #2c2c35;
+      padding:2px 8px;
+      border-radius:999px;
+      color:#bdbdc7;
+      flex:0 0 auto;
     }
 
-    .habitName {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .nameText {
-      font-weight: 700;
-      font-size: 14px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .pill {
-      font-size: 12px;
-      border: 1px solid #2c2c35;
-      padding: 2px 8px;
-      border-radius: 999px;
-      color: #bdbdc7;
-      flex: 0 0 auto;
-    }
-
-    .weekGrid {
-      display: grid;
+    .weekGrid{
+      display:grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      justify-items: center;
-      align-items: center;
-      min-width: 0;
+      gap:8px;
+      justify-items:center;
+      align-items:center;
+      min-width:0;
     }
+    .weekGrid .spacer{ visibility:hidden; }
 
-    .weekGrid .spacer {
-      visibility: hidden;
+    .box{
+      width:100%;
+      max-width:54px;
+      aspect-ratio:1/1;
+      border-radius:10px;
+      border:1px solid #2c2c35;
+      background:#0f0f10;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+      overflow:hidden;
     }
-
-    .box {
-      width: 100%;
-      max-width: 54px;
-      aspect-ratio: 1 / 1;
-      border-radius: 10px;
-      border: 1px solid #2c2c35;
-      background: #0f0f10;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      position: relative;
-      overflow: hidden;
+    .box .label{
+      font-size:14px;
+      font-weight:800;
+      color:#bdbdc7;
+      letter-spacing:0.5px;
     }
-
-    /* Letter inside box (visible only when empty) */
-    .box .label {
-      font-size: 14px;
-      font-weight: 800;
-      color: #bdbdc7;
-      letter-spacing: 0.5px;
-    }
-
-    /* Done hides letter by covering it */
-    .box.done {
+    .box.done{
       background: var(--c);
       border-color: color-mix(in srgb, var(--c) 70%, #2c2c35);
     }
-    .box.done .label { opacity: 0; }
-
-    /* Rest hides letter too, with hatched pattern */
-    .box.rest {
-      background: repeating-linear-gradient(
-        45deg,
+    .box.done .label{ opacity:0; }
+    .box.rest{
+      background: repeating-linear-gradient(45deg,
         rgba(255,255,255,.18) 0px,
         rgba(255,255,255,.18) 4px,
         rgba(255,255,255,.03) 4px,
         rgba(255,255,255,.03) 8px
       );
-      border-color: #3a3a45;
+      border-color:#3a3a45;
     }
-    .box.rest .label { opacity: 0; }
+    .box.rest .label{ opacity:0; }
 
-    .hint {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #bdbdc7;
+    /* Month view */
+    .monthPanel{
+      background:#17171a;
+      border:1px solid #26262c;
+      border-radius:18px;
+      padding:14px;
     }
+    .monthControls{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .monthHabitRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .weekdayHeader{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap:8px;
+      margin: 8px 0 10px;
+      color:#bdbdc7;
+      font-size:12px;
+      font-weight:700;
+    }
+    .weekdayHeader div{
+      text-align:center;
+    }
+    .monthGrid{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap:8px;
+    }
+    .mcell{
+      width:100%;
+      aspect-ratio:1/1;
+      border-radius:10px;
+      border:1px solid #2c2c35;
+      background:#0f0f10;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+      overflow:hidden;
+    }
+    .mcell.blank{ opacity:0; border-color:transparent; background:transparent; }
+    .mcell .num{
+      font-size:12px;
+      font-weight:800;
+      color:#bdbdc7;
+    }
+    .mcell.done{
+      background: var(--c);
+      border-color: color-mix(in srgb, var(--c) 70%, #2c2c35);
+    }
+    .mcell.done .num{ opacity:0; }
+    .mcell.rest{
+      background: repeating-linear-gradient(45deg,
+        rgba(255,255,255,.18) 0px,
+        rgba(255,255,255,.18) 4px,
+        rgba(255,255,255,.03) 4px,
+        rgba(255,255,255,.03) 8px
+      );
+      border-color:#3a3a45;
+    }
+    .mcell.rest .num{ opacity:0; }
+
+    .hint{ margin-top:10px; font-size:12px; color:#bdbdc7; }
   </style>
 </head>
 
 <body>
 <div class="wrap">
 
-  <div class="row" style="justify-content:space-between; margin-bottom:10px">
+  <div class="topBar">
     <div>
       <h1>Habits</h1>
       <div class="sub" id="todayLine"></div>
     </div>
+
+    <div class="navBar">
+      <button id="prevBtn" aria-label="Previous">←</button>
+      <button id="nextBtn" aria-label="Next">→</button>
+    </div>
   </div>
 
   <div class="card">
-    <div class="row">
-      <input id="newHabitName" placeholder="Add habit">
-      <button id="addHabitBtn">Add</button>
+    <div class="row" style="justify-content:space-between;">
+      <div class="viewToggle">
+        <button id="weekTab" class="active" type="button">Week</button>
+        <button id="monthTab" type="button">Month</button>
+      </div>
+      <div class="titleLine" id="rangeTitle"></div>
     </div>
+
+    <div class="row" style="margin-top:10px;">
+      <input id="newHabitName" placeholder="Add habit">
+      <button id="addHabitBtn" type="button">Add</button>
+    </div>
+
     <div class="hint">
-      Tap a day: None → Done → Rest → None. Max 2 rest days per week.<br>
+      Week: tap a day = None → Done → Rest → None (max 2 rest days/week).<br>
       Streaks count DONE days; REST pauses; NONE breaks.
     </div>
   </div>
 
+  <!-- Week view -->
   <div class="habitList" id="habitList"></div>
+
+  <!-- Month view -->
+  <div class="monthPanel" id="monthPanel" style="display:none;">
+    <div class="monthControls">
+      <div class="titleLine" id="monthTitle"></div>
+      <div class="monthHabitRow">
+        <span class="sub">Habit:</span>
+        <select id="monthHabitSelect"></select>
+      </div>
+    </div>
+
+    <div class="weekdayHeader" id="weekdayHeader"></div>
+    <div class="monthGrid" id="monthGrid"></div>
+    <div class="hint">Month view is read-only (just for looking back).</div>
+  </div>
 
 </div>
 
 <script>
+  // ---------- Date + helpers ----------
   const UK = "en-GB";
-  const pad = n => String(n).padStart(2, "0");
+  const pad = n => String(n).padStart(2,"0");
   const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const fromISO = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
   const fmtUK = d => d.toLocaleDateString(UK);
-  const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
 
   const startOfWeek = d => {
-    const x = new Date(d);
-    x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); // Monday start
+    const x=new Date(d);
+    x.setDate(x.getDate()-((x.getDay()+6)%7)); // Monday start
     x.setHours(0,0,0,0);
     return x;
   };
 
-  function makeId() {
+  const endOfWeek = d => addDays(startOfWeek(d), 6);
+
+  const firstOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
+  const lastOfMonth = d => new Date(d.getFullYear(), d.getMonth()+1, 0);
+
+  function makeId(){
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return "id-" + Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
   }
 
+  // ---------- Storage ----------
   const STORAGE = "habits_data_v1";
   const now = new Date(); now.setHours(0,0,0,0);
 
-  function load() {
+  function load(){
     const raw = localStorage.getItem(STORAGE);
-    if (raw) return JSON.parse(raw);
+    if(raw) return JSON.parse(raw);
 
     const habits = [
-      { id: makeId(), name: "Write",   color: "#7c5cff" },
-      { id: makeId(), name: "Walk",    color: "#37d67a" },
-      { id: makeId(), name: "Workout", color: "#ff7a59" },
-      { id: makeId(), name: "Piano",   color: "#4aa3ff" }
+      { id: makeId(), name:"Write",   color:"#7c5cff" },
+      { id: makeId(), name:"Walk",    color:"#37d67a" },
+      { id: makeId(), name:"Workout", color:"#ff7a59" },
+      { id: makeId(), name:"Piano",   color:"#4aa3ff" }
     ];
-
     const entries = {};
     habits.forEach(h => entries[h.id] = {});
     const data = { habits, entries };
@@ -221,50 +340,89 @@
 
   const data = load();
 
-  function streak(hid) {
-    let s = 0;
-    let cur = new Date(now);
-    while (true) {
+  // ---------- Rules ----------
+  function streak(hid){
+    // DONE counts; REST pauses; NONE breaks
+    let s=0;
+    let cur=new Date(now);
+    while(true){
       const v = data.entries[hid][toISO(cur)] || "none";
-      if (v === "none") break;
-      if (v === "done") s++;
-      cur = addDays(cur, -1);
+      if(v==="none") break;
+      if(v==="done") s++;
+      cur = addDays(cur,-1);
     }
     return s;
   }
 
-  function restCount(hid, iso) {
+  function restCountForWeek(hid, iso){
     const s = startOfWeek(fromISO(iso));
-    let c = 0;
-    for (let i=0; i<7; i++) {
-      if (data.entries[hid][toISO(addDays(s, i))] === "rest") c++;
+    let c=0;
+    for(let i=0;i<7;i++){
+      const dISO = toISO(addDays(s,i));
+      if((data.entries[hid][dISO] || "none") === "rest") c++;
     }
     return c;
   }
 
-  function cycle(hid, iso) {
+  function cycleState(hid, iso){
     const cur = data.entries[hid][iso] || "none";
-    const next = (cur === "none") ? "done" : (cur === "done") ? "rest" : "none";
-    if (next === "rest" && restCount(hid, iso) >= 2) return;
+    const next = (cur==="none") ? "done" : (cur==="done") ? "rest" : "none";
+    if(next==="rest" && restCountForWeek(hid, iso) >= 2) return;
 
-    if (next === "none") delete data.entries[hid][iso];
+    if(next==="none") delete data.entries[hid][iso];
     else data.entries[hid][iso] = next;
 
     localStorage.setItem(STORAGE, JSON.stringify(data));
     render();
   }
 
-  function render() {
-    document.getElementById("todayLine").textContent =
-      `Today: ${fmtUK(now)} • Week starts: ${fmtUK(startOfWeek(now))}`;
+  // ---------- View state ----------
+  let viewMode = "week";               // "week" | "month"
+  let weekAnchor = new Date(now);      // any day in the week being shown
+  let monthAnchor = new Date(now);     // any day in the month being shown
+  let monthHabitId = data.habits[0]?.id || null;
 
-    const list = document.getElementById("habitList");
-    list.innerHTML = "";
+  // ---------- UI refs ----------
+  const todayLine = document.getElementById("todayLine");
+  const rangeTitle = document.getElementById("rangeTitle");
+  const habitList = document.getElementById("habitList");
 
-    const weekStart = startOfWeek(now);
-    const weekDates = Array.from({length: 7}, (_, i) => addDays(weekStart, i));
+  const weekTab = document.getElementById("weekTab");
+  const monthTab = document.getElementById("monthTab");
 
-    // Labels inside boxes: M T W T F S S
+  const monthPanel = document.getElementById("monthPanel");
+  const monthTitle = document.getElementById("monthTitle");
+  const monthHabitSelect = document.getElementById("monthHabitSelect");
+  const weekdayHeader = document.getElementById("weekdayHeader");
+  const monthGrid = document.getElementById("monthGrid");
+
+  // ---------- Render: header + title ----------
+  function renderHeader(){
+    todayLine.textContent = `Today: ${fmtUK(now)}`;
+
+    if(viewMode === "week"){
+      const s = startOfWeek(weekAnchor);
+      const e = endOfWeek(weekAnchor);
+      rangeTitle.textContent = `Week: ${fmtUK(s)} → ${fmtUK(e)}`;
+    } else {
+      const m = firstOfMonth(monthAnchor);
+      const label = m.toLocaleDateString(UK, { month:"long", year:"numeric" });
+      rangeTitle.textContent = `Month: ${label}`;
+    }
+
+    weekTab.classList.toggle("active", viewMode==="week");
+    monthTab.classList.toggle("active", viewMode==="month");
+
+    habitList.style.display = (viewMode==="week") ? "grid" : "none";
+    monthPanel.style.display = (viewMode==="month") ? "block" : "none";
+  }
+
+  // ---------- Render: week ----------
+  function renderWeek(){
+    habitList.innerHTML = "";
+
+    const weekStart = startOfWeek(weekAnchor);
+    const weekDates = Array.from({length:7}, (_,i)=>addDays(weekStart,i));
     const labels = ["M","T","W","T","F","S","S"];
 
     data.habits.forEach(h => {
@@ -273,18 +431,28 @@
 
       const left = document.createElement("div");
       left.className = "habitName";
-      left.innerHTML = `
-        <span class="nameText">${h.name}</span>
-        <span class="pill">${streak(h.id)}</span>
-      `;
+
+      const name = document.createElement("span");
+      name.className = "nameText";
+      name.textContent = h.name;
+
+      const pill = document.createElement("span");
+      pill.className = "pill";
+      pill.textContent = String(streak(h.id));
+
+      left.appendChild(name);
+      left.appendChild(pill);
 
       const grid = document.createElement("div");
       grid.className = "weekGrid";
 
-      // 2-row layout using a 4-col grid.
-      // Top row: 0..3 (Mon..Thu)
-      // Bottom row: 4..6 (Fri..Sun) + 1 spacer
-      for (let i = 0; i < 7; i++) {
+      for(let i=0;i<7;i++){
+        if(i===4){
+          const spacer = document.createElement("div");
+          spacer.className = "spacer";
+          grid.appendChild(spacer);
+        }
+
         const d = weekDates[i];
         const iso = toISO(d);
         const v = data.entries[h.id][iso] || "none";
@@ -293,30 +461,109 @@
         box.className = `box ${v}`;
         box.style.setProperty("--c", h.color);
         box.title = `${h.name} • ${fmtUK(d)} • ${v.toUpperCase()}`;
-        box.innerHTML = `<span class="label">${labels[i]}</span>`;
-        box.addEventListener("click", () => cycle(h.id, iso));
 
-        // Insert spacer before Fri so Fri starts row 2 col 1
-        if (i === 4) {
-          const spacer = document.createElement("div");
-          spacer.className = "spacer";
-          spacer.textContent = "";
-          grid.appendChild(spacer);
-        }
+        const lab = document.createElement("span");
+        lab.className = "label";
+        lab.textContent = labels[i];
+        box.appendChild(lab);
 
+        box.addEventListener("click", ()=>cycleState(h.id, iso));
         grid.appendChild(box);
       }
 
       row.appendChild(left);
       row.appendChild(grid);
-      list.appendChild(row);
+      habitList.appendChild(row);
     });
   }
 
-  document.getElementById("addHabitBtn").onclick = () => {
-    const i = document.getElementById("newHabitName");
-    const name = (i.value || "").trim();
-    if (!name) return;
+  // ---------- Render: month ----------
+  function renderMonth(){
+    // Build habit dropdown
+    monthHabitSelect.innerHTML = "";
+    data.habits.forEach(h=>{
+      const opt = document.createElement("option");
+      opt.value = h.id;
+      opt.textContent = h.name;
+      monthHabitSelect.appendChild(opt);
+    });
+
+    if(!monthHabitId && data.habits[0]) monthHabitId = data.habits[0].id;
+    if(monthHabitId && !data.habits.find(h=>h.id===monthHabitId)) {
+      monthHabitId = data.habits[0]?.id || null;
+    }
+    if(monthHabitId) monthHabitSelect.value = monthHabitId;
+
+    // Month title
+    const m0 = firstOfMonth(monthAnchor);
+    monthTitle.textContent = m0.toLocaleDateString(UK, { month:"long", year:"numeric" });
+
+    // Weekday header (Mon..Sun)
+    weekdayHeader.innerHTML = "";
+    const wd = ["M","T","W","T","F","S","S"];
+    wd.forEach(x=>{
+      const div = document.createElement("div");
+      div.textContent = x;
+      weekdayHeader.appendChild(div);
+    });
+
+    // Month grid (read-only)
+    monthGrid.innerHTML = "";
+    if(!monthHabitId) return;
+
+    const habit = data.habits.find(h=>h.id===monthHabitId);
+    const color = habit?.color || "#7c5cff";
+
+    const first = firstOfMonth(monthAnchor);
+    const last = lastOfMonth(monthAnchor);
+
+    // Monday-based index: Mon=0..Sun=6
+    const firstDayIdx = (first.getDay() + 6) % 7;
+    const daysInMonth = last.getDate();
+
+    // Total cells: pad to complete weeks
+    const totalCells = Math.ceil((firstDayIdx + daysInMonth) / 7) * 7;
+
+    for(let i=0;i<totalCells;i++){
+      const cell = document.createElement("div");
+      cell.className = "mcell";
+
+      const dayNum = i - firstDayIdx + 1;
+      if(dayNum < 1 || dayNum > daysInMonth){
+        cell.classList.add("blank");
+        monthGrid.appendChild(cell);
+        continue;
+      }
+
+      const d = new Date(first.getFullYear(), first.getMonth(), dayNum);
+      const iso = toISO(d);
+      const v = data.entries[monthHabitId][iso] || "none";
+
+      if(v==="done") cell.classList.add("done");
+      if(v==="rest") cell.classList.add("rest");
+      cell.style.setProperty("--c", color);
+      cell.title = `${habit.name} • ${fmtUK(d)} • ${v.toUpperCase()}`;
+
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = String(dayNum);
+      cell.appendChild(num);
+
+      monthGrid.appendChild(cell);
+    }
+  }
+
+  function render(){
+    renderHeader();
+    if(viewMode==="week") renderWeek();
+    else renderMonth();
+  }
+
+  // ---------- Events ----------
+  document.getElementById("addHabitBtn").addEventListener("click", ()=>{
+    const input = document.getElementById("newHabitName");
+    const name = (input.value || "").trim();
+    if(!name) return;
 
     const newHabit = {
       id: makeId(),
@@ -326,17 +573,54 @@
 
     data.habits.push(newHabit);
     data.entries[newHabit.id] = {};
-    i.value = "";
-
+    input.value = "";
     localStorage.setItem(STORAGE, JSON.stringify(data));
-    render();
-  };
 
+    if(!monthHabitId) monthHabitId = newHabit.id;
+    render();
+  });
+
+  weekTab.addEventListener("click", ()=>{
+    viewMode = "week";
+    render();
+  });
+
+  monthTab.addEventListener("click", ()=>{
+    viewMode = "month";
+    render();
+  });
+
+  document.getElementById("prevBtn").addEventListener("click", ()=>{
+    if(viewMode==="week"){
+      weekAnchor = addDays(weekAnchor, -7);
+    } else {
+      const d = firstOfMonth(monthAnchor);
+      monthAnchor = new Date(d.getFullYear(), d.getMonth()-1, 1);
+    }
+    render();
+  });
+
+  document.getElementById("nextBtn").addEventListener("click", ()=>{
+    if(viewMode==="week"){
+      weekAnchor = addDays(weekAnchor, +7);
+    } else {
+      const d = firstOfMonth(monthAnchor);
+      monthAnchor = new Date(d.getFullYear(), d.getMonth()+1, 1);
+    }
+    render();
+  });
+
+  monthHabitSelect.addEventListener("change", ()=>{
+    monthHabitId = monthHabitSelect.value;
+    renderMonth();
+  });
+
+  // ---------- Init ----------
   render();
 
-  // Service worker (GitHub Pages path)
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/habits/sw.js?v=3");
+  // Service worker (cache-bust param to help iPhone update)
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("/habits/sw.js?v=4");
   }
 </script>
 </body>
